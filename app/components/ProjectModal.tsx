@@ -32,6 +32,20 @@ export default function ProjectModal({ isOpen, onClose, onSubmit, project }: Pro
     endDate: '',
   });
 
+  const formatDateForInput = (date: string | Date | undefined): string => {
+    if (!date) return '';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return '';
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return '';
+    }
+  };
+
   useEffect(() => {
     if (project) {
       setFormData({
@@ -41,8 +55,8 @@ export default function ProjectModal({ isOpen, onClose, onSubmit, project }: Pro
         technologies: project.technologies || '',
         link: project.link || '',
         github: project.github || '',
-        startDate: project.startDate || '',
-        endDate: project.endDate || '',
+        startDate: formatDateForInput(project.startDate),
+        endDate: formatDateForInput(project.endDate),
       });
     } else {
       setFormData({

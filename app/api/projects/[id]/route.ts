@@ -62,17 +62,29 @@ export async function PUT(
       );
     }
 
+    const updateData: any = {
+      name,
+      description,
+      technologies,
+      link: link || '',
+      github: github || '',
+    };
+
+    if (startDate && startDate.trim()) {
+      updateData.startDate = new Date(startDate);
+    } else {
+      updateData.startDate = null;
+    }
+
+    if (endDate && endDate.trim()) {
+      updateData.endDate = new Date(endDate);
+    } else {
+      updateData.endDate = null;
+    }
+
     const project = await Project.findOneAndUpdate(
       { _id: id, userId: payload.userId },
-      {
-        name,
-        description,
-        technologies,
-        link,
-        github,
-        startDate,
-        endDate,
-      },
+      updateData,
       { new: true }
     );
 

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 });
 
     const transformedProfiles = profiles.map(profile => {
-      const profileObj = profile.toObject();
+      const profileObj = profile.toObject() as any;
       if (profileObj.projectIds && profileObj.projectIds.length > 0) {
         profileObj.projects = profileObj.projectIds;
       }

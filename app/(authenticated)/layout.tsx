@@ -22,9 +22,22 @@ export default function AuthenticatedLayout({
     }
 
     fetchUserProfile();
+
+    const handleUserUpdate = () => {
+      fetchUserProfile(true); 
+    };
+
+    window.addEventListener('userUpdated', handleUserUpdate);
+
+    return () => {
+      window.removeEventListener('userUpdated', handleUserUpdate);
+    };
   }, [router]);
 
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = async (skipLoading = false) => {
+    if (!skipLoading) {
+      setIsLoading(true);
+    }
     try {
       const token = getAccessToken();
       const response = await fetch('/api/user/profile', {
@@ -45,7 +58,9 @@ export default function AuthenticatedLayout({
       const userData = getUser();
       setUser(userData);
     } finally {
-      setIsLoading(false);
+      if (!skipLoading) {
+        setIsLoading(false);
+      }
     }
   };
 

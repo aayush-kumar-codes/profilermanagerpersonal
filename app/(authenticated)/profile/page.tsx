@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { setUser as setLocalUser } from '@/lib/auth';
+import { setUser as setLocalUser, getAccessToken, getUser as getLocalUser } from '@/lib/auth';
 import ConfirmModal from '../../components/ConfirmModal';
 import { useConfirmModal } from '@/lib/hooks/useConfirmModal';
 import { api } from '@/lib/utils/api';
@@ -18,6 +18,11 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modal = useConfirmModal();
 
@@ -48,9 +53,12 @@ export default function ProfilePage() {
     
     if (data) {
       setUser(data.user);
+      const profilePictureUrl = typeof data.user.profilePicture === 'string' 
+        ? data.user.profilePicture 
+        : data.user.profilePicture?.url || '';
       setFormData({
         name: data.user.name || '',
-        profilePicture: data.user.profilePicture || '',
+        profilePicture: profilePictureUrl,
       });
     } else if (error) {
       console.error('Error fetching profile:', error);
@@ -121,8 +129,46 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const data = await response.json();
-        setFormData((prev) => ({ ...prev, profilePicture: data.url }));
-        modal.showSuccess('Profile picture uploaded successfully');
+        const imageUrl = data.url;
+        
+        // Update local state
+        setFormData((prev) => ({ ...prev, profilePicture: imageUrl }));
+        
+        // Save to database by calling the profile update endpoint
+        const token = getAccessToken();
+        const updateResponse = await fetch('/api/user/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            name: formData.name || user?.name || '',
+            profilePicture: imageUrl,
+          }),
+        });
+
+        if (updateResponse.ok) {
+          const updateData = await updateResponse.json();
+          setUser(updateData.user);
+          const profilePictureUrl = typeof updateData.user.profilePicture === 'string' 
+            ? updateData.user.profilePicture 
+            : updateData.user.profilePicture?.url || '';
+          
+          // Update local storage
+          const currentUser = getLocalUser();
+          if (currentUser) {
+            setLocalUser({
+              ...currentUser,
+              profilePicture: profilePictureUrl,
+            });
+          }
+          modal.showSuccess('Profile picture uploaded successfully');
+          window.dispatchEvent(new Event('userUpdated'));
+        } else {
+          const errorData = await updateResponse.json();
+          modal.showError(errorData.error || 'Failed to save profile picture to database');
+        }
       } else {
         modal.showError('Failed to upload image', 'Upload Failed');
       }
@@ -163,10 +209,14 @@ export default function ProfilePage() {
       if (response.ok) {
         const data = await response.json();
         setUser(data.user);
+        const profilePictureUrl = typeof data.user.profilePicture === 'string' 
+          ? data.user.profilePicture 
+          : data.user.profilePicture?.url || '';
         setLocalUser({
           id: data.user._id,
           name: data.user.name,
           email: data.user.email,
+          profilePicture: profilePictureUrl,
         });
         modal.showSuccess('Profile updated successfully!');
         window.dispatchEvent(new Event('userUpdated'));
@@ -344,15 +394,56 @@ export default function ProfilePage() {
                 <label htmlFor="currentPassword" className="form-label">
                   Current Password *
                 </label>
-                <input
-                  type="password"
-                  id="currentPassword"
-                  name="currentPassword"
-                  value={passwordData.currentPassword}
-                  onChange={handlePasswordChange}
-                  className={`form-input ${errors.currentPassword ? 'input-error' : ''}`}
-                  placeholder="Enter current password"
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPasswords.currentPassword ? 'text' : 'password'}
+                    id="currentPassword"
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    className={`form-input ${errors.currentPassword ? 'input-error' : ''}`}
+                    placeholder="Enter current password"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPasswords(prev => ({ ...prev, currentPassword: !prev.currentPassword }))}
+                    aria-label={showPasswords.currentPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPasswords.currentPassword ? (
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M2.85355 2.14645C2.65829 1.95118 2.34171 1.95118 2.14645 2.14645C1.95118 2.34171 1.95118 2.65829 2.14645 2.85355L4.16852 4.87562C2.05102 6.32912 0.833336 9.16667 0.833336 10C0.833336 11.6667 4.16667 16.6667 10 16.6667C12.1562 16.6667 13.9844 15.9844 15.3125 15.1458L17.1464 16.9797C17.3417 17.175 17.6583 17.175 17.8536 16.9797C18.0488 16.7845 18.0488 16.4679 17.8536 16.2726L2.85355 2.14645Z"
+                          fill="currentColor"
+                        />
+                        <path
+                          d="M6.25 6.25L13.75 13.75M10 3.33333C5.83333 3.33333 2.5 8.33333 2.5 10C2.5 10.8333 3.33333 12.5 4.58333 13.75M15.4167 15.4167C16.6667 14.1667 17.5 12.5 17.5 10C17.5 8.33333 14.1667 3.33333 10 3.33333"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M10 3.33333C5.83333 3.33333 2.5 8.33333 2.5 10C2.5 11.6667 5.83333 16.6667 10 16.6667C14.1667 16.6667 17.5 11.6667 17.5 10C17.5 8.33333 14.1667 3.33333 10 3.33333Z"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M10 12.5C11.3807 12.5 12.5 11.3807 12.5 10C12.5 8.61929 11.3807 7.5 10 7.5C8.61929 7.5 7.5 8.61929 7.5 10C7.5 11.3807 8.61929 12.5 10 12.5Z"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 {errors.currentPassword && <span className="error-message">{errors.currentPassword}</span>}
               </div>
 
@@ -360,15 +451,56 @@ export default function ProfilePage() {
                 <label htmlFor="newPassword" className="form-label">
                   New Password *
                 </label>
-                <input
-                  type="password"
-                  id="newPassword"
-                  name="newPassword"
-                  value={passwordData.newPassword}
-                  onChange={handlePasswordChange}
-                  className={`form-input ${errors.newPassword ? 'input-error' : ''}`}
-                  placeholder="Enter new password"
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPasswords.newPassword ? 'text' : 'password'}
+                    id="newPassword"
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    className={`form-input ${errors.newPassword ? 'input-error' : ''}`}
+                    placeholder="Enter new password"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPasswords(prev => ({ ...prev, newPassword: !prev.newPassword }))}
+                    aria-label={showPasswords.newPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPasswords.newPassword ? (
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M2.85355 2.14645C2.65829 1.95118 2.34171 1.95118 2.14645 2.14645C1.95118 2.34171 1.95118 2.65829 2.14645 2.85355L4.16852 4.87562C2.05102 6.32912 0.833336 9.16667 0.833336 10C0.833336 11.6667 4.16667 16.6667 10 16.6667C12.1562 16.6667 13.9844 15.9844 15.3125 15.1458L17.1464 16.9797C17.3417 17.175 17.6583 17.175 17.8536 16.9797C18.0488 16.7845 18.0488 16.4679 17.8536 16.2726L2.85355 2.14645Z"
+                          fill="currentColor"
+                        />
+                        <path
+                          d="M6.25 6.25L13.75 13.75M10 3.33333C5.83333 3.33333 2.5 8.33333 2.5 10C2.5 10.8333 3.33333 12.5 4.58333 13.75M15.4167 15.4167C16.6667 14.1667 17.5 12.5 17.5 10C17.5 8.33333 14.1667 3.33333 10 3.33333"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M10 3.33333C5.83333 3.33333 2.5 8.33333 2.5 10C2.5 11.6667 5.83333 16.6667 10 16.6667C14.1667 16.6667 17.5 11.6667 17.5 10C17.5 8.33333 14.1667 3.33333 10 3.33333Z"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M10 12.5C11.3807 12.5 12.5 11.3807 12.5 10C12.5 8.61929 11.3807 7.5 10 7.5C8.61929 7.5 7.5 8.61929 7.5 10C7.5 11.3807 8.61929 12.5 10 12.5Z"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 {errors.newPassword && <span className="error-message">{errors.newPassword}</span>}
               </div>
 
@@ -376,15 +508,56 @@ export default function ProfilePage() {
                 <label htmlFor="confirmPassword" className="form-label">
                   Confirm New Password *
                 </label>
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={passwordData.confirmPassword}
-                  onChange={handlePasswordChange}
-                  className={`form-input ${errors.confirmPassword ? 'input-error' : ''}`}
-                  placeholder="Confirm new password"
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPasswords.confirmPassword ? 'text' : 'password'}
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    className={`form-input ${errors.confirmPassword ? 'input-error' : ''}`}
+                    placeholder="Confirm new password"
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPasswords(prev => ({ ...prev, confirmPassword: !prev.confirmPassword }))}
+                    aria-label={showPasswords.confirmPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPasswords.confirmPassword ? (
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M2.85355 2.14645C2.65829 1.95118 2.34171 1.95118 2.14645 2.14645C1.95118 2.34171 1.95118 2.65829 2.14645 2.85355L4.16852 4.87562C2.05102 6.32912 0.833336 9.16667 0.833336 10C0.833336 11.6667 4.16667 16.6667 10 16.6667C12.1562 16.6667 13.9844 15.9844 15.3125 15.1458L17.1464 16.9797C17.3417 17.175 17.6583 17.175 17.8536 16.9797C18.0488 16.7845 18.0488 16.4679 17.8536 16.2726L2.85355 2.14645Z"
+                          fill="currentColor"
+                        />
+                        <path
+                          d="M6.25 6.25L13.75 13.75M10 3.33333C5.83333 3.33333 2.5 8.33333 2.5 10C2.5 10.8333 3.33333 12.5 4.58333 13.75M15.4167 15.4167C16.6667 14.1667 17.5 12.5 17.5 10C17.5 8.33333 14.1667 3.33333 10 3.33333"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    ) : (
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                        <path
+                          d="M10 3.33333C5.83333 3.33333 2.5 8.33333 2.5 10C2.5 11.6667 5.83333 16.6667 10 16.6667C14.1667 16.6667 17.5 11.6667 17.5 10C17.5 8.33333 14.1667 3.33333 10 3.33333Z"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M10 12.5C11.3807 12.5 12.5 11.3807 12.5 10C12.5 8.61929 11.3807 7.5 10 7.5C8.61929 7.5 7.5 8.61929 7.5 10C7.5 11.3807 8.61929 12.5 10 12.5Z"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
               </div>
 

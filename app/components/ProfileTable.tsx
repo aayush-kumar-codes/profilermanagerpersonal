@@ -50,11 +50,19 @@ export default function ProfileTable({ profiles, onEdit, onDelete }: ProfileTabl
     setIsSharing(id);
     try {
       const fullUrl = `${window.location.origin}/portfolio/${id}`;
+      const apiToken = process.env.NEXT_PUBLIC_TINYURL_API_TOKEN;
+      
+      if (!apiToken) {
+        console.error('TinyURL API token is not configured');
+        alert('Share feature is not configured. Please contact support.');
+        setIsSharing(null);
+        return;
+      }
       
       const response = await fetch('https://api.tinyurl.com/create', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_TINYURL_API_TOKEN}`,
+          'Authorization': `Bearer ${apiToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -65,23 +73,60 @@ export default function ProfileTable({ profiles, onEdit, onDelete }: ProfileTabl
 
       if (response.ok) {
         const data = await response.json();
-        setShareUrl(data.data.tiny_url);
-        setShowShareModal(true);
+        if (data.data && data.data.tiny_url) {
+          setShareUrl(data.data.tiny_url);
+          setShowShareModal(true);
+        } else {
+          throw new Error('Invalid response from TinyURL API');
+        }
       } else {
-        throw new Error('Failed to generate TinyURL');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to generate TinyURL');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating share link:', error);
-      alert('Error generating share link. Please try again.');
+      alert(`Error generating share link: ${error.message || 'Please try again.'}`);
     } finally {
       setIsSharing(null);
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareUrl);
-    alert('Link copied to clipboard!');
-    setShowShareModal(false);
+  const copyToClipboard = async () => {
+    if (!shareUrl) {
+      alert('No URL to copy. Please try sharing again.');
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      alert('Link copied to clipboard!');
+      setShowShareModal(false);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      // Fallback for older browsers
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = shareUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        if (successful) {
+          alert('Link copied to clipboard!');
+          setShowShareModal(false);
+        } else {
+          alert('Failed to copy link. Please try again.');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback copy failed:', fallbackError);
+        alert('Failed to copy link. Please copy manually.');
+      }
+    }
   };
 
   return (

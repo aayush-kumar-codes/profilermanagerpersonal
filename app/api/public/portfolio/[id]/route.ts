@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    const profileObj = profile.toObject();
+    const profileObj = profile.toObject() as any;
     if (profileObj.projectIds && profileObj.projectIds.length > 0) {
       profileObj.projects = profileObj.projectIds;
     }

@@ -147,10 +147,15 @@ export default function ProjectsPage() {
     }
   };
 
-  const formatDate = (date: string | undefined): string => {
+  const formatDate = (date: string | Date | undefined): string => {
     if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    try {
+      const d = date instanceof Date ? date : new Date(date);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    } catch {
+      return '';
+    }
   };
 
   if (isLoading) {
@@ -192,7 +197,7 @@ export default function ProjectsPage() {
             onChange={(e) => setSelectedTech(e.target.value)}
             className="filter-select"
           >
-            <option value="all">All Technologies ({projects.length} projects)</option>
+            <option value="all">All Technologies</option>
             {techStacks.map((tech) => (
               <option key={tech} value={tech}>
                 {tech}

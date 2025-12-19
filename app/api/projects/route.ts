@@ -63,10 +63,10 @@ export async function POST(request: NextRequest) {
       name,
       description,
       technologies,
-      link,
-      github,
-      startDate,
-      endDate,
+      link: link || '',
+      github: github || '',
+      startDate: startDate && startDate.trim() ? new Date(startDate) : undefined,
+      endDate: endDate && endDate.trim() ? new Date(endDate) : undefined,
     });
 
     return NextResponse.json(

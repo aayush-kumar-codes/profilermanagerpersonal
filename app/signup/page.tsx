@@ -38,9 +38,9 @@ export default function SignupPage() {
 
     if (touched[name as keyof typeof touched]) {
       let error = '';
-      if (name === 'name') error = validators.name(value);
-      if (name === 'email') error = validators.email(value);
-      if (name === 'password') error = validators.password(value);
+      if (name === 'name') error = validators.name(value) || '';
+      if (name === 'email') error = validators.email(value) || '';
+      if (name === 'password') error = validators.password(value) || '';
       setErrors((prev) => ({ ...prev, [name]: error }));
     }
   };
@@ -50,18 +50,18 @@ export default function SignupPage() {
     setTouched((prev) => ({ ...prev, [name]: true }));
 
     let error = '';
-    if (name === 'name') error = validators.name(value);
-    if (name === 'email') error = validators.email(value);
-    if (name === 'password') error = validators.password(value);
+    if (name === 'name') error = validators.name(value) || '';
+    if (name === 'email') error = validators.email(value) || '';
+    if (name === 'password') error = validators.password(value) || '';
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const nameError = validators.name(formData.name);
-    const emailError = validators.email(formData.email);
-    const passwordError = validators.password(formData.password);
+    const nameError = validators.name(formData.name) || '';
+    const emailError = validators.email(formData.email) || '';
+    const passwordError = validators.password(formData.password) || '';
 
     setErrors({
       name: nameError,

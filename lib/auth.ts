@@ -27,13 +27,13 @@ export function clearTokens() {
   }
 }
 
-export function setUser(user: { id: string; name: string; email: string }) {
+export function setUser(user: { id: string; name: string; email: string; profilePicture?: string }) {
   if (typeof window !== 'undefined') {
     localStorage.setItem('user', JSON.stringify(user));
   }
 }
 
-export function getUser(): { id: string; name: string; email: string } | null {
+export function getUser(): { id: string; name: string; email: string; profilePicture?: string } | null {
   if (typeof window !== 'undefined') {
     const userStr = localStorage.getItem('user');
     return userStr ? JSON.parse(userStr) : null;

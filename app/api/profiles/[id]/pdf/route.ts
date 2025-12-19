@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectDB } from '@/lib/mongodb';
 import Profile from '@/lib/models/Profile';
 import { verifyAccessToken } from '@/lib/jwt';
 
@@ -26,7 +26,7 @@ export async function GET(
     }
 
     const { id } = await params;
-    await connectToDatabase();
+    await connectDB();
     const profile = await Profile.findOne({ _id: id, userId: decoded.userId });
 
     if (!profile) {
@@ -39,11 +39,10 @@ export async function GET(
     // Generate HTML content for PDF
     const htmlContent = generatePDFHTML(profile);
 
-    // Return HTML with special headers that trigger PDF generation
     return new NextResponse(htmlContent, {
       headers: {
         'Content-Type': 'text/html',
-        'Content-Disposition': `attachment; filename="portfolio-${profile.personal?.name || 'profile'}.html"`,
+        'Content-Disposition': `attachment; filename="portfolio-${profile.name || 'profile'}.html"`,
       },
     });
   } catch (error) {
