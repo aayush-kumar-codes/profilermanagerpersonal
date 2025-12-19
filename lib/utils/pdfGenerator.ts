@@ -179,11 +179,25 @@ export const generateProfilePDF = async (profile: ProfileData) => {
             font-weight: 600; color: #3b82f6;
           }
           .pdf-projects-grid {
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;
+            display: grid; grid-template-columns: 1fr; gap: 24px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          @media (min-width: 768px) {
+            .pdf-projects-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
           }
           .pdf-project-card {
             background: #0f172a; border: 1px solid #334155;
             border-radius: 16px; padding: 28px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+            overflow: hidden;
           }
           .pdf-project-title {
             font-size: 20px; font-weight: 700;
@@ -192,6 +206,10 @@ export const generateProfilePDF = async (profile: ProfileData) => {
           .pdf-project-description {
             font-size: 15px; line-height: 1.7;
             color: #94a3b8; margin-bottom: 16px;
+            flex-grow: 1;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            word-break: break-word;
           }
           .pdf-project-tags {
             display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
@@ -203,6 +221,10 @@ export const generateProfilePDF = async (profile: ProfileData) => {
             padding: 8px 16px; background: #3b82f6;
             border-radius: 8px; color: white;
             font-size: 13px; font-weight: 600;
+          }
+          .pdf-project-date {
+            font-size: 13px; color: #94a3b8;
+            font-weight: 500; margin-top: 8px;
           }
           .pdf-skills-container {
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;
@@ -413,6 +435,9 @@ export const generateProfilePDF = async (profile: ProfileData) => {
                         ${project.link ? `<div class="pdf-project-link">🔗 Live Demo</div>` : ''}
                         ${project.github ? `<div class="pdf-project-link">💻 Source Code</div>` : ''}
                       </div>
+                    ` : ''}
+                    ${project.startDate || project.endDate ? `
+                      <div class="pdf-project-date">${formatDate(project.startDate)} - ${formatDate(project.endDate)}</div>
                     ` : ''}
                   </div>
                 `).join('')}

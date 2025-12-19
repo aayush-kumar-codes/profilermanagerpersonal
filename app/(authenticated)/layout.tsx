@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { getAccessToken, getUser, isAuthenticated } from '@/lib/auth';
 import Navbar from '../components/Navbar';
 
@@ -14,6 +14,7 @@ export default function AuthenticatedLayout({
   const pathname = usePathname();
   const [user, setUser] = useState<{ name: string; email: string; profilePicture?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     if (!isAuthenticated()) {

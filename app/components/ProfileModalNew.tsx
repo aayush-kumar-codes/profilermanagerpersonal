@@ -10,6 +10,7 @@ import type {
   Certification 
 } from '@/lib/types/profile';
 import { getAccessToken } from '@/lib/auth';
+import ConfirmModal from './ConfirmModal';
 
 const formatDate = (date: any): string => {
   if (!date) return '';
@@ -37,6 +38,20 @@ export default function ProfileModalNew({ isOpen, onClose, onSubmit, profile }: 
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [libraryProjects, setLibraryProjects] = useState<any[]>([]);
+  const [showConfirmClose, setShowConfirmClose] = useState(false);
+
+  const handleCloseClick = () => {
+    setShowConfirmClose(true);
+  };
+
+  const handleConfirmClose = () => {
+    setShowConfirmClose(false);
+    onClose();
+  };
+
+  const handleCancelClose = () => {
+    setShowConfirmClose(false);
+  };
   
   const [formData, setFormData] = useState<ProfileData>({
     name: '',
@@ -60,7 +75,20 @@ export default function ProfileModalNew({ isOpen, onClose, onSubmit, profile }: 
 
   useEffect(() => {
     if (profile) {
-      const projectIds = (profile.projects || []).map((proj: any) => proj._id).filter(Boolean);
+      let projectIds: string[] = [];
+      
+      if (profile.projectIds && Array.isArray(profile.projectIds)) {
+        projectIds = profile.projectIds.map((id: any) => {
+          if (typeof id === 'string') return id;
+          if (id?._id) return typeof id._id === 'string' ? id._id : id._id.toString();
+          return id?.toString() || '';
+        }).filter(Boolean);
+      } else if (profile.projects && Array.isArray(profile.projects)) {
+        projectIds = profile.projects.map((proj: any) => {
+          if (proj._id) return typeof proj._id === 'string' ? proj._id : proj._id.toString();
+          return '';
+        }).filter(Boolean);
+      }
       
       setFormData({
         _id: profile._id,
@@ -313,6 +341,8 @@ export default function ProfileModalNew({ isOpen, onClose, onSubmit, profile }: 
         projectIds: [...prev.projectIds, projectId],
         projects: [...prev.projects, {
           ...selectedProject,
+          startDate: formatDate(selectedProject.startDate),
+          endDate: formatDate(selectedProject.endDate),
           order: prev.projects.length,
         }],
       }));
@@ -409,12 +439,15 @@ export default function ProfileModalNew({ isOpen, onClose, onSubmit, profile }: 
     { id: 'certification', name: 'Certifications', icon: '📜' },
   ];
 
+  if (!isOpen) return null;
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{profile ? 'Edit Profile' : 'Add New Profile'}</h2>
-          <button className="modal-close" onClick={onClose}>
+    <>
+      <div className="modal-overlay" onClick={handleCloseClick}>
+        <div className="modal-content-large" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>{profile ? 'Edit Profile' : 'Add New Profile'}</h2>
+            <button className="modal-close" onClick={handleCloseClick} type="button">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path
                 d="M18 6L6 18M6 6L18 18"
@@ -857,7 +890,14 @@ export default function ProfileModalNew({ isOpen, onClose, onSubmit, profile }: 
                       >
                         <option value="" disabled>Load from Library</option>
                         {libraryProjects
-                          .filter(libProj => !formData.projectIds.includes(libProj._id || ''))
+                          .filter(libProj => {
+                            if (!libProj._id) return true;
+                            const libProjId = typeof libProj._id === 'string' ? libProj._id : String(libProj._id);
+                            return !formData.projectIds.some(pid => {
+                              const formProjId = typeof pid === 'string' ? pid : String(pid);
+                              return formProjId === libProjId;
+                            });
+                          })
                           .map(libProj => (
                             <option key={libProj._id} value={libProj._id}>
                               {libProj.name}
@@ -1091,7 +1131,7 @@ export default function ProfileModalNew({ isOpen, onClose, onSubmit, profile }: 
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={onClose}>
+            <button type="button" className="btn-secondary" onClick={handleCloseClick}>
               Cancel
             </button>
             <button type="submit" className="btn-primary">
@@ -1101,6 +1141,17 @@ export default function ProfileModalNew({ isOpen, onClose, onSubmit, profile }: 
         </form>
       </div>
     </div>
+
+    <ConfirmModal
+      isOpen={showConfirmClose}
+      title="Discard Changes?"
+      message="Are you sure you want to close this modal? Any unsaved changes will be lost."
+      type="warning"
+      onClose={handleCancelClose}
+      onConfirm={handleConfirmClose}
+      confirmText="Discard"
+    />
+    </>
   );
 }
 

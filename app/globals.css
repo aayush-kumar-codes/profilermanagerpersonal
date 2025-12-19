@@ -132,6 +132,9 @@ textarea.form-input {
   resize: vertical;
   min-height: 100px;
   font-family: inherit;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 input[type="month"].form-input,
@@ -1028,6 +1031,12 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   background: var(--card-bg);
   color: var(--text-primary);
   transition: border-color 0.2s;
+}
+
+textarea.project-form-input {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .project-form-input:focus {
@@ -2071,7 +2080,7 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   font-size: 18px;
   line-height: 1.8;
   color: var(--text-muted);
-  max-width: 900px;
+  max-width: auto !important;
 }
 
 /* Timeline */
@@ -2190,8 +2199,15 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
 /* Projects Grid */
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: 1fr;
   gap: 24px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .projects-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .project-card {
@@ -2202,6 +2218,10 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   transition: all 0.3s ease;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .project-card:hover {
@@ -2223,6 +2243,9 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   color: var(--text-muted);
   margin-bottom: 16px;
   flex-grow: 1;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .project-tags {
@@ -2266,8 +2289,15 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
 /* Skills */
 .skills-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: 1fr;
   gap: 24px;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .skills-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .skill-group {
@@ -2276,6 +2306,8 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   border-radius: 16px;
   padding: 24px;
   transition: all 0.3s ease;
+  width: 100%;
+  min-width: 0;
 }
 
 .skill-group:hover {
@@ -2413,10 +2445,6 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
 
 /* Responsive Portfolio */
 @media (max-width: 1024px) {
-  .projects-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
-
   .portfolio-name {
     font-size: 40px;
   }
@@ -2552,8 +2580,21 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
 
 .projects-grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: 1fr;
   gap: 24px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .projects-grid-container {
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .projects-grid-container {
+    grid-template-columns: repeat(3, minmax(420px, 1fr));
+  }
 }
 
 .project-card-item {
@@ -2565,6 +2606,10 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .project-card-item:hover {
@@ -2578,6 +2623,13 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
+.project-card-header > div:first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .project-card-title {
@@ -2586,6 +2638,9 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   color: var(--foreground);
   line-height: 1.3;
   margin-bottom: 6px;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .project-usage-badge {
@@ -2603,6 +2658,8 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   display: flex;
   gap: 8px;
   flex-shrink: 0;
+  align-items: flex-start;
+  min-width: fit-content;
 }
 
 .project-profile-badge {
@@ -2639,6 +2696,9 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .project-card-tech {
@@ -2659,6 +2719,7 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
 
 .project-card-links {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
@@ -2781,10 +2842,6 @@ input[type="date"].form-input::-webkit-datetime-edit-year-field {
 }
 
 @media (max-width: 768px) {
-  .projects-grid-container {
-    grid-template-columns: 1fr;
-  }
-
   .filter-section {
     flex-direction: column;
     align-items: stretch;

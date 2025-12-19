@@ -1,8 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { clearTokens } from '@/lib/auth';
 
 interface NavbarProps {
@@ -13,7 +13,17 @@ interface NavbarProps {
 
 export default function Navbar({ userName, userAvatar, activePage = 'dashboard' }: NavbarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [optimisticActivePage, setOptimisticActivePage] = useState<string | null>(null);
+  useEffect(() => {
+    setOptimisticActivePage(null);
+  }, [pathname]);
+
+  const handleNavClick = (page: 'dashboard' | 'profile' | 'projects') => {
+    setOptimisticActivePage(page);
+  };
+  const currentActivePage = optimisticActivePage || activePage;
 
   const handleLogout = () => {
     clearTokens();
@@ -39,7 +49,9 @@ export default function Navbar({ userName, userAvatar, activePage = 'dashboard' 
         <div className="navbar-menu navbar-menu-desktop">
           <Link
             href="/dashboard"
-            className={`nav-item ${activePage === 'dashboard' ? 'active' : ''}`}
+            className={`nav-item ${currentActivePage === 'dashboard' ? 'active' : ''}`}
+            onClick={() => handleNavClick('dashboard')}
+            prefetch={true}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -52,7 +64,9 @@ export default function Navbar({ userName, userAvatar, activePage = 'dashboard' 
 
           <Link
             href="/profile"
-            className={`nav-item ${activePage === 'profile' ? 'active' : ''}`}
+            className={`nav-item ${currentActivePage === 'profile' ? 'active' : ''}`}
+            onClick={() => handleNavClick('profile')}
+            prefetch={true}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
@@ -68,7 +82,9 @@ export default function Navbar({ userName, userAvatar, activePage = 'dashboard' 
 
           <Link
             href="/projects"
-            className={`nav-item ${activePage === 'projects' ? 'active' : ''}`}
+            className={`nav-item ${currentActivePage === 'projects' ? 'active' : ''}`}
+            onClick={() => handleNavClick('projects')}
+            prefetch={true}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path
@@ -145,8 +161,9 @@ export default function Navbar({ userName, userAvatar, activePage = 'dashboard' 
               <div className="nav-dropdown">
                 <Link
                   href="/dashboard"
-                  className={`nav-dropdown-item ${activePage === 'dashboard' ? 'active' : ''}`}
-                  onClick={closeDropdown}
+                  className={`nav-dropdown-item ${currentActivePage === 'dashboard' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('dashboard')}
+                  prefetch={true}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <rect x="3" y="3" width="7" height="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -159,8 +176,9 @@ export default function Navbar({ userName, userAvatar, activePage = 'dashboard' 
 
                 <Link
                   href="/profile"
-                  className={`nav-dropdown-item ${activePage === 'profile' ? 'active' : ''}`}
-                  onClick={closeDropdown}
+                  className={`nav-dropdown-item ${currentActivePage === 'profile' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('profile')}
+                  prefetch={true}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <path
@@ -176,8 +194,9 @@ export default function Navbar({ userName, userAvatar, activePage = 'dashboard' 
 
                 <Link
                   href="/projects"
-                  className={`nav-dropdown-item ${activePage === 'projects' ? 'active' : ''}`}
-                  onClick={closeDropdown}
+                  className={`nav-dropdown-item ${currentActivePage === 'projects' ? 'active' : ''}`}
+                  onClick={() => handleNavClick('projects')}
+                  prefetch={true}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                     <path

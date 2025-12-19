@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/mongodb';
 import Profile from '@/lib/models/Profile';
 import Project from '@/lib/models/Project';
 import { verifyAccessToken } from '@/lib/jwt';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,6 +25,8 @@ export async function GET(request: NextRequest) {
       const profileObj = profile.toObject() as any;
       if (profileObj.projectIds && profileObj.projectIds.length > 0) {
         profileObj.projects = profileObj.projectIds;
+      } else {
+        profileObj.projects = [];
       }
       return profileObj;
     });
@@ -60,6 +63,85 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let finalProjectIds: string[] = [];
+    
+    if (projects && Array.isArray(projects)) {
+      const existingProjectIds = new Set<string>();
+      
+      for (const project of projects) {
+        try {
+          if (project._id) {
+            const projectId = typeof project._id === 'string' ? project._id : project._id.toString();
+            
+            if (mongoose.Types.ObjectId.isValid(projectId)) {
+              const existingProject = await Project.findById(projectId);
+              if (existingProject) {
+                if (!existingProjectIds.has(projectId)) {
+                  existingProjectIds.add(projectId);
+                  finalProjectIds.push(projectId);
+                }
+                continue;
+              }
+            }
+            
+            if (project.name?.trim() && project.description?.trim() && project.technologies?.trim()) {
+              const newProject = await Project.create({
+                userId: payload.userId,
+                name: project.name.trim(),
+                description: project.description.trim(),
+                technologies: project.technologies.trim(),
+                link: project.link?.trim() || '',
+                github: project.github?.trim() || '',
+                startDate: project.startDate && !isNaN(new Date(project.startDate).getTime()) ? new Date(project.startDate) : undefined,
+                endDate: project.endDate && !isNaN(new Date(project.endDate).getTime()) ? new Date(project.endDate) : undefined,
+              });
+              
+              if (newProject._id) {
+                const newId = typeof newProject._id === 'string' ? newProject._id : String(newProject._id);
+                finalProjectIds.push(newId);
+              }
+            }
+          } else {
+            if (project.name?.trim() && project.description?.trim() && project.technologies?.trim()) {
+              const newProject = await Project.create({
+                userId: payload.userId,
+                name: project.name.trim(),
+                description: project.description.trim(),
+                technologies: project.technologies.trim(),
+                link: project.link?.trim() || '',
+                github: project.github?.trim() || '',
+                startDate: project.startDate && !isNaN(new Date(project.startDate).getTime()) ? new Date(project.startDate) : undefined,
+                endDate: project.endDate && !isNaN(new Date(project.endDate).getTime()) ? new Date(project.endDate) : undefined,
+              });
+              
+              if (newProject._id) {
+                const newId = typeof newProject._id === 'string' ? newProject._id : String(newProject._id);
+                finalProjectIds.push(newId);
+              }
+            }
+          }
+        } catch (projectError: any) {
+          console.error('Error processing project:', projectError);
+        }
+      }
+    }
+    
+    if (projectIds && Array.isArray(projectIds)) {
+      for (const projectId of projectIds) {
+        try {
+          const id = typeof projectId === 'string' ? projectId : projectId.toString();
+          if (mongoose.Types.ObjectId.isValid(id)) {
+            const project = await Project.findOne({ _id: id, userId: payload.userId });
+            if (project && !finalProjectIds.includes(id)) {
+              finalProjectIds.push(id);
+            }
+          }
+        } catch (error: any) {
+          console.error('Error processing projectId:', error);
+        }
+      }
+    }
+
     const profile = await Profile.create({
       userId: payload.userId,
       name: personal.name,
@@ -75,16 +157,22 @@ export async function POST(request: NextRequest) {
       twitter: personal.twitter || '',
       education: education || [],
       experience: experience || [],
-      projects: projects || [],
-      projectIds: projectIds || [],
+      projects: [],
+      projectIds: finalProjectIds,
       skills: skills || [],
       certification: certification || [],
     });
 
     const populatedProfile = await Profile.findById(profile._id).populate('projectIds');
+    const profileObj = populatedProfile.toObject() as any;
+    if (profileObj.projectIds && profileObj.projectIds.length > 0) {
+      profileObj.projects = profileObj.projectIds;
+    } else {
+      profileObj.projects = [];
+    }
 
     return NextResponse.json(
-      { message: 'Profile created successfully', profile: populatedProfile },
+      { message: 'Profile created successfully', profile: profileObj },
       { status: 201 }
     );
   } catch (error: any) {
